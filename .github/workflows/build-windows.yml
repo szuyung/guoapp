@@ -38,7 +38,11 @@ jobs:
           gcc --version
       - name: Build zhenguojian Windows
         shell: pwsh
-        run: python scripts/build_windows.py --all-sources
+        run: |
+          python scripts/build_native.py --platform windows --all-sources
+          flutter pub get
+          flutter build windows --release --no-pub --dart-define=ALL_SOURCES=true
+          python scripts/package_release.py --platform windows --all-sources
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
         with:
