@@ -1,0 +1,47 @@
+name: Build Windows (zhenguojian)
+
+on:
+  workflow_dispatch:
+
+env:
+  GOPROXY: https://proxy.golang.org,direct
+  GOSUMDB: sum.golang.org
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: native/go.mod
+          cache-dependency-path: native/go.sum
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.4'
+          channel: stable
+          cache: true
+      - name: Ensure MinGW-w64 gcc on PATH
+        shell: pwsh
+        run: |
+          if (-not (Get-Command gcc -ErrorAction SilentlyContinue)) {
+            if (Test-Path "C:\msys64\mingw64\bin\gcc.exe") {
+              "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            } else {
+              choco install mingw -y --no-progress
+            }
+          }
+          gcc --version
+      - name: Build zhenguojian Windows
+        shell: pwsh
+        run: python scripts/build_windows.py --all-sources
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: zhenguojian-windows
+          path: dist/windows/*.zip
+          retention-days: 14
